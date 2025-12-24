@@ -14,16 +14,18 @@ type TrickList = {
 };
 
 const TKO2026 = () => {
+  const [lastRoundHistory, setLastRoundHistory] = useState<number[]>([]); // 紀錄上一回合抽過的招式，用於防重複
   const [alreadyDownList, setAlreadyDownList] = useState<number[]>([]);
   const [currentTrick, setCurrentTrick] = useState<number | null>(null);
   const [p1Score, setP1Score] = useState<number>(0);
   const [p2Score, setP2Score] = useState<number>(0);
   const [currentTricks, setCurrentTricks] = useState<Trick[]>([]);
   const [currentTricksLevel, setCurrentTricksLevel] = useState<number>(1);
+
   const trickList = useMemo<TrickList[]>(() => [
     {
       level: 1,
-      title: "新手組",
+      title: "新手組🔰",
       tricks: [
         { no: 1, content: "非慣用手殺手中皿" },
         { no: 2, content: "飛行機" },
@@ -39,7 +41,7 @@ const TKO2026 = () => {
     },
     {
       level: 2,
-      title: "初階組",
+      title: "初階組🌟",
       tricks: [
         { no: 1, content: "歐洲一周" },
         { no: 2, content: "月面 - 一迴旋收" },
@@ -57,7 +59,7 @@ const TKO2026 = () => {
     },
     {
       level: 3,
-      title: "進階組",
+      title: "進階組🔥",
       tricks: [
         { no: 1, content: "非慣用手重力機快手止劍" },
         { no: 2, content: "歐洲鶯" },
@@ -76,7 +78,7 @@ const TKO2026 = () => {
     },
     {
       level: 4,
-      title: "挑戰組",
+      title: "挑戰組👑",
       tricks: [
         { no: 1, content: "三圈跳劍" },
         { no: 2, content: "逆月面 - 3 tap 一迴旋逆月 - 止劍" },
@@ -97,24 +99,37 @@ const TKO2026 = () => {
 
   // Handle the lottery action
   const handleLottery = () => {
+    // 找出本局尚未抽過的招式
     const availableTricks = currentTricks.filter(trick => !alreadyDownList.includes(trick.no));
+
     if (availableTricks.length === 0) {
       alert("所有招式已經抽完了！");
       return;
     }
-    // 生成一個 UInt32Array 陣列，裡面包含一個密碼學安全的隨機數
+
+    // 進階篩選：從「本局未抽過」中，再過濾掉「上一局抽過」的招式
+    const highPriorityTricks = availableTricks.filter(trick => !lastRoundHistory.includes(trick.no));
+
+    // 決定抽籤池：如果還有「全新未重複」的招式，優先從這裡抽；否則只能從剩下的抽
+    const poolToUse = highPriorityTricks.length > 0 ? highPriorityTricks : availableTricks;
+
+    // 生成隨機數
     const randomBuffer = new Uint32Array(1);
     window.crypto.getRandomValues(randomBuffer);
 
-    // 使用這個隨機數來計算索引
-    const randomIndex = randomBuffer[0] % availableTricks.length;
-    const selectedTrick = availableTricks[randomIndex];
+    // 使用隨機數計算索引
+    const randomIndex = randomBuffer[0] % poolToUse.length;
+    const selectedTrick = poolToUse[randomIndex];
+
     setAlreadyDownList([...alreadyDownList, selectedTrick.no]);
     setCurrentTrick(selectedTrick.no);
   };
 
   // Reset the game state
   const handleReset = () => {
+    // 重置時，將當前的清單存入歷史紀錄，作為下一局的排除依據
+    setLastRoundHistory([...alreadyDownList]);
+
     setAlreadyDownList([]);
     setCurrentTrick(null);
     setP1Score(0);
@@ -144,16 +159,20 @@ const TKO2026 = () => {
   return (
     <>
       <div className="w-full px-3 mb-5 grid grid-cols-3 gap-3">
-        {trickList.map((trick) => (
+        {trickList.map((trick, index) => (
           <button
             key={trick.level}
             onClick={() => {
               setCurrentTricks(trick.tricks);
               setCurrentTricksLevel(trick.level);
+
+              // 切換難度時，應該完全重置歷史紀錄，因為不同難度的招式編號意義不同
+              setLastRoundHistory([]);
               handleReset();
+
               localStorage.setItem('trickLevel', String(trick.level));
             }}
-            className={`py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent ${currentTricksLevel === trick.level ? 'bg-neutral-800 text-yellow-400' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+            className={`${index === 3 ? "col-span-3" : ""} py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent ${currentTricksLevel === trick.level ? 'bg-neutral-800 text-yellow-400' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
           >
             {trick.title}
           </button>
