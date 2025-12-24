@@ -3,9 +3,10 @@ import Link from 'next/link'
 
 const KendamaTools = () => {
   const links = useMemo(() => [
-    { title: '2025 South Jam', href: '/kendamaTools/southJam', description: '2025南方指定賽練習' },
-    { title: '閃電戰', href: '/kendamaTools/blitz', description: '比拚招式熟練度的遊戲玩法！' },
-    { title: '計數器', href: '/kendamaTools/counter', description: '紀錄招式練習次數' },
+    { title: '2025 South Jam', href: '/kendamaTools/2025SouthJam', description: '2025南方指定賽練習' },
+    { title: '2026 TKO', href: '/kendamaTools/2026TKO', description: '2026 TKO 指定賽練習' },
+    // { title: '閃電戰', href: '/kendamaTools/blitz', description: '比拚招式熟練度的遊戲玩法！' },
+    // { title: '計數器', href: '/kendamaTools/counter', description: '紀錄招式練習次數' },
   ], [])
   return (
     <div className="max-w-[85rem] px-4 py-14 sm:px-6 lg:px-8 mx-auto">
