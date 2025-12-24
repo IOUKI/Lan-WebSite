@@ -158,6 +158,37 @@ const TKO2026 = () => {
 
   return (
     <>
+      {/* 定義流動動畫的 CSS */}
+      <style>{`
+        @keyframes tech-flow {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        .tech-gradient-text {
+          /* 定義漸層顏色：青 -> 藍 -> 紫 -> 青 (循環) */
+          background: linear-gradient(to right, #22d3ee, #3b82f6, #a855f7, #22d3ee);
+          background-size: 200% auto;
+          background-clip: text;
+          -webkit-background-clip: text;
+          color: transparent;
+          animation: tech-flow 3s linear infinite;
+        }
+
+        .tech-gradient-bg {
+          /* 使用較深的色階：Cyan-800 -> Blue-800 -> Purple-800 */
+          background: linear-gradient(110deg, #155e75, #1e40af, #6b21a8, #155e75); 
+          background-size: 200% auto;
+          animation: tech-flow 3s linear infinite;
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); /* 增加一點藍色光暈 */
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+      `}</style>
+
+      <div className="w-full flex justify-center mb-5 mt-2">
+        <h3 className="text-4xl font-extrabold tracking-widest tech-gradient-text drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+          2026 TKO 指定賽練習
+        </h3>
+      </div>
       <div className="w-full px-3 mb-5 grid grid-cols-3 gap-3">
         {trickList.map((trick, index) => (
           <button
@@ -172,7 +203,11 @@ const TKO2026 = () => {
 
               localStorage.setItem('trickLevel', String(trick.level));
             }}
-            className={`${index === 3 ? "col-span-3" : ""} py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent ${currentTricksLevel === trick.level ? 'bg-neutral-800 text-yellow-400' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+            className={`
+              ${index === 3 ? "col-span-3" : ""}
+              ${currentTricksLevel === trick.level ? 'tech-gradient-bg text-yellow-300 scale-105' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border border-transparent'}
+              py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent
+            `}
           >
             {trick.title}
           </button>
