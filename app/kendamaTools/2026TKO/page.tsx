@@ -176,7 +176,7 @@ const TKO2026 = () => {
 
         .tech-gradient-bg {
           /* 使用較深的色階：Cyan-800 -> Blue-800 -> Purple-800 */
-          background: linear-gradient(110deg, #155e75, #1e40af, #6b21a8, #155e75); 
+          background: linear-gradient(110deg, #155e75, #1e40af, #6b21a8, #155e75);
           background-size: 200% auto;
           animation: tech-flow 3s linear infinite;
           box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); /* 增加一點藍色光暈 */
@@ -184,12 +184,12 @@ const TKO2026 = () => {
         }
       `}</style>
 
-      <div className="w-full flex justify-center mb-5 mt-2">
-        <h3 className="text-4xl font-extrabold tracking-widest tech-gradient-text drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+      <div className="w-full flex justify-center mb-7 mt-2">
+        <h3 className="text-2xl md:text-4xl font-extrabold tracking-widest tech-gradient-text drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
           2026 TKO 指定賽練習
         </h3>
       </div>
-      <div className="w-full px-3 mb-5 grid grid-cols-3 gap-3">
+      <div className="w-full px-3 mb-4 grid grid-cols-3 gap-4">
         {trickList.map((trick, index) => (
           <button
             key={trick.level}
@@ -205,8 +205,8 @@ const TKO2026 = () => {
             }}
             className={`
               ${index === 3 ? "col-span-3" : ""}
-              ${currentTricksLevel === trick.level ? 'tech-gradient-bg text-yellow-300 scale-105' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border border-transparent'}
-              py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent
+              ${currentTricksLevel === trick.level ? 'tech-gradient-bg text-yellow-300 scale-100' : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border border-transparent'}
+              py-3 px-4 inline-flex items-center justify-center gap-x-2 text-xl font-medium rounded-lg border border-transparent
             `}
           >
             {trick.title}
@@ -214,20 +214,27 @@ const TKO2026 = () => {
         ))}
       </div>
       <div className="w-full px-3 grid grid-cols-2 gap-4">
-        <button type="button" className="py-3 px-4 col-span-2 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent bg-black text-white dark:bg-white dark:text-black disabled:opacity-50 disabled:pointer-events-none" aria-haspopup="dialog" aria-expanded="false" aria-controls="trick-list-modal" data-hs-overlay="#trick-list-modal">
+        <button
+          type="button"
+          className="py-3 px-4 col-span-2 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-black border-transparent dark:bg-gray-700 dark:border-none disabled:opacity-50 disabled:pointer-events-none"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="trick-list-modal"
+          data-hs-overlay="#trick-list-modal"
+        >
           招式列表
         </button>
         <button
           type="button"
           onClick={handleLottery}
-          className="py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+          className="py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent bg-blue-600 text-white focus:outline-hidden focus:bg-blue-600 disabled:opacity-50 disabled:pointer-events-none transition-transform active:scale-90"
         >
           抽招
         </button>
         <button
           type="button"
           onClick={handleReset}
-          className="py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent bg-gray-600 text-white hover:bg-gray-700 focus:outline-hidden focus:bg-gray-700 disabled:opacity-50 disabled:pointer-events-none"
+          className="py-3 px-4 inline-flex items-center justify-center gap-x-2 text-3xl font-medium rounded-lg border border-transparent bg-gray-500 text-white focus:outline-hidden focus:bg-gray-600 disabled:opacity-50 disabled:pointer-events-none transition-transform active:scale-90"
         >
           重置
         </button>
@@ -271,28 +278,28 @@ const TKO2026 = () => {
             </button>
           </div>
         </div>
-      </div>
-      {currentTrick !== null ? (
-        <div className="mt-7 px-3">
-          <div className="">
-            <p className="text-center text-xl font-semibold mb-2">
-              抽取的招式
-            </p>
-            <div className="bg-slate-800 rounded-lg p-4">
-              <p className="text-3xl font-semibold text-center text-white">
-                {currentTricks.find(trick => trick.no === currentTrick)?.content}
+        {currentTrick !== null ? (
+          <div className="col-span-2">
+            <div className="bg-gray-200 dark:bg-slate-800 p-2 rounded-lg">
+              <p className="text-center text-xl font-semibold mb-2">
+                當前招式
               </p>
+              <div className="">
+                <p className="text-2xl font-semibold text-center">
+                  {currentTricks.find(trick => trick.no === currentTrick)?.content}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        null
-      )}
+        ) : (
+          null
+        )}
+      </div>
       <div className="mt-7 px-3">
-        <h2 className="text-lg font-semibold">已經抽過的招式：</h2>
+        <h2 className="text-lg font-semibold">抽招紀錄：</h2>
         <ul className="list-disc pl-5">
           {alreadyDownList.map((trickNo) => (
-            <li key={trickNo} className="">{currentTricks.find(trick => trick.no === trickNo)?.content}</li>
+            <li key={trickNo} className="text-lg">{currentTricks.find(trick => trick.no === trickNo)?.content}</li>
           ))}
         </ul>
       </div>
@@ -322,7 +329,7 @@ const TKO2026 = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 dark:bg-neutral-800 dark:divide-neutral-700">
                     {currentTricks.map((trick) => (
-                      <tr key={trick.no} className={`hover:bg-gray-50 dark:hover:bg-neutral-700 ${alreadyDownList.includes(trick.no) ? 'bg-gray-100 dark:bg-neutral-600' : ''}`}>
+                      <tr key={trick.no} className={alreadyDownList.includes(trick.no) ? 'bg-gray-100 dark:bg-neutral-600' : ''}>
                         <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{trick.no}</td>
                         <td className="px-6 py-4 dark:text-white">{trick.content}</td>
                       </tr>
