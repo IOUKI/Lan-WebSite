@@ -1,7 +1,7 @@
 'use client';
 
 import { number } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 type Position = {
   latitude: number;
@@ -10,6 +10,17 @@ type Position = {
 
 const MapPage = () => {
   const [position, setPosition] = useState<Position | null>(null);
+
+  const openInGoogleMaps = useCallback(() => {
+    if (!position) return;
+
+    // 構建 Google Maps 網址
+    // z=15 是縮放層級，q 代表標記點
+    const url = `https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}`;
+
+    // 開啟新視窗
+    window.open(url, '_blank');
+  }, [position]);
 
   useEffect(() => {
     // 檢查瀏覽器是否支援定位功能
@@ -63,8 +74,20 @@ const MapPage = () => {
   return (
     <>
       {position ? (
-        <div>
-          {position.latitude}, {position.longitude}
+        <div className="w-full">
+          <div className="w-full my-5 flex justify-center">
+            <h1 className="text-5xl">
+              {position.latitude}, {position.longitude}
+            </h1>
+          </div>
+          <div className="w-full flex justify-center">
+            <button
+              onClick={openInGoogleMaps}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-transform active:scale-95 shadow-lg flex items-center"
+            >
+              📍 在 Google 地圖中開啟
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center min-h-screen bg-white p-6">
