@@ -38,7 +38,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
             <div className="flex flex-wrap justify-between items-center gap-2">
               <div>
                 <p className="text-xs text-gray-600 dark:text-neutral-400">
-                  © 2024 Lan.
+                  © {new Date().getFullYear()} Lan.
                 </p>
               </div>
               <ul className="flex flex-wrap items-center">
