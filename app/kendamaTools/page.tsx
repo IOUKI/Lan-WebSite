@@ -13,11 +13,10 @@ const tools = [
 ]
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  hidden: { opacity: 0, y: 40 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: { delay: 0.15 * i, duration: 0.5, ease: 'easeOut' },
   }),
 }
@@ -63,7 +62,7 @@ const KendamaTools = () => {
             >
               <Link
                 href={tool.href}
-                className="group relative block p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 bg-white/60 dark:bg-neutral-800/60 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-blue-500/50 dark:hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/10"
+                className="group relative block p-6 rounded-2xl border border-gray-200 dark:border-neutral-700 bg-white/80 dark:bg-neutral-800/80 overflow-hidden transition-[border-color,box-shadow] duration-300 hover:border-blue-500/50 dark:hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/10"
               >
                 {/* hover glow */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-cyan-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

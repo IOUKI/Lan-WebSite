@@ -19,7 +19,6 @@ const FloatingGlow = () => {
           animate={{
             x: [0, 40, -30, 20, 0],
             y: [0, -30, 20, -40, 0],
-            scale: [1, 1.15, 0.9, 1.1, 1],
           }}
           transition={{
             duration: blob.duration,
