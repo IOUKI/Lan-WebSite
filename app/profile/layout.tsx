@@ -22,7 +22,6 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
             <div id="hs-navbar-cover-page" className="hs-collapse hidden overflow-hidden transition-all duration-300 basis-full grow sm:block" aria-labelledby="hs-navbar-cover-page-collapse">
               <div className="flex flex-col gap-5 mt-5 sm:flex-row sm:items-center sm:justify-end sm:mt-0 sm:ps-5">
                 <Link href="/profile" scroll={false} className="font-medium focus:outline-none hover:underline">首頁</Link>
-                <Link href="/profile/about" scroll={false} className="font-medium focus:outline-none hover:underline">關於</Link>
                 <Link href="/games" scroll={false} className="font-medium focus:outline-none hover:underline">遊戲</Link>
                 <Link href="/kendamaTools" scroll={false} className="font-medium focus:outline-none hover:underline">劍玉</Link>
                 <div><ThemeSwitcher /></div>
