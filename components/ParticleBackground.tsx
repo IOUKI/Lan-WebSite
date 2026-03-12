@@ -28,8 +28,17 @@ const ParticleBackground = () => {
     let mouse = { x: -1000, y: -1000 }
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth
-      canvas.height = canvas.offsetHeight
+      const w = canvas.offsetWidth
+      const h = canvas.offsetHeight
+      // Skip if size hasn't actually changed (avoids mobile overscroll flicker)
+      if (canvas.width === w && canvas.height === h) return
+      canvas.width = w
+      canvas.height = h
+      // Clamp existing particles to new bounds instead of reinitializing
+      for (const p of particles) {
+        if (p.x > w) p.x = Math.random() * w
+        if (p.y > h) p.y = Math.random() * h
+      }
     }
 
     const initParticles = () => {
@@ -123,13 +132,14 @@ const ParticleBackground = () => {
     initParticles()
     loop()
 
-    window.addEventListener('resize', () => { resize(); initParticles() })
+    const handleResize = () => { resize() }
+    window.addEventListener('resize', handleResize)
     canvas.addEventListener('mousemove', handleMouse)
     canvas.addEventListener('mouseleave', handleMouseLeave)
 
     return () => {
       cancelAnimationFrame(animationId)
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', handleResize)
       canvas.removeEventListener('mousemove', handleMouse)
       canvas.removeEventListener('mouseleave', handleMouseLeave)
     }
