@@ -177,7 +177,7 @@ const ProfileHomePage = () => {
                 href={repo.html_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block p-5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                className="group block p-5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm transition-[border-color,box-shadow] duration-300 hover:shadow-lg hover:shadow-blue-500/10"
                 custom={i}
                 variants={fadeUp}
                 initial="hidden"
@@ -248,7 +248,7 @@ const ProfileHomePage = () => {
             >
               <Link
                 href={tool.href}
-                className="group block p-5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                className="group block p-5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm transition-[border-color,box-shadow] duration-300 hover:shadow-lg hover:shadow-blue-500/10"
               >
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-blue-600 dark:text-blue-400 group-hover:underline">
@@ -300,7 +300,7 @@ const ProfileHomePage = () => {
               href={link.url}
               target={link.url.startsWith('mailto') ? undefined : '_blank'}
               rel={link.url.startsWith('mailto') ? undefined : 'noopener noreferrer'}
-              className="flex flex-col items-center gap-3 p-5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1"
+              className="flex flex-col items-center gap-3 p-5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-blue-500/50 dark:hover:border-blue-500/50 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm transition-[border-color,box-shadow,transform] duration-300 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1"
               custom={i}
               variants={fadeUp}
               initial="hidden"
