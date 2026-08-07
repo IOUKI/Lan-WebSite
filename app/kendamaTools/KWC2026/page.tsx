@@ -296,8 +296,12 @@ const KWC2026 = () => {
                       key={index}
                       ref={drag.registerItem(index)}
                       onPointerDown={drag.onPointerDown(index)}
-                      style={{ touchAction: drag.dragIndex !== null ? 'none' : undefined }}
-                      className={`rounded-xl border transition-all ${
+                      style={{
+                        touchAction: drag.dragIndex !== null ? 'none' : undefined,
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
+                      }}
+                      className={`select-none rounded-xl border transition-all ${
                         trick
                           ? 'border-gray-200 dark:border-neutral-800'
                           : 'border-dashed border-gray-300 dark:border-neutral-700'
