@@ -7,6 +7,7 @@ import FloatingGlow from '@/components/FloatingGlow'
 
 // icon 規則：比賽型練習工具用 bi-trophy（獎盃），小遊戲類型用 bi-controller（遊戲手把）
 const tools = [
+  { title: 'KWC 2026', href: '/kendamaTools/KWC2026', description: '劍玉世界盃選招、計分與計時練習', icon: 'bi-trophy' },
   { title: '2026 TKO', href: '/kendamaTools/2026TKO', description: '2026 TKO 指定賽練習', icon: 'bi-trophy' },
   { title: '2025 South Jam', href: '/kendamaTools/2025SouthJam', description: '2025南方指定賽練習', icon: 'bi-trophy' },
   { title: '閃電戰', href: '/kendamaTools/blitz', description: '比拚招式熟練度的遊戲玩法！', icon: 'bi-controller' },
