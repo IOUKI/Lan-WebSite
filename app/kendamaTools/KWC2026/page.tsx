@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import TrickPicker from '@/components/kwc2026/TrickPicker'
 import PracticeOverlay from '@/components/kwc2026/PracticeOverlay'
-import { PRACTICE_VIDEO, getTrick, type Trick } from '@/components/kwc2026/tricks'
+import { LEVEL_VIDEOS, PRACTICE_VIDEO, getTrick, type Trick } from '@/components/kwc2026/tricks'
 import { useLongPressReorder } from '@/components/kwc2026/useLongPressReorder'
 import {
   FINAL_MAX_SLOTS,
@@ -34,6 +34,7 @@ const KWC2026 = () => {
   const [practiceRound, setPracticeRound] = useState<number | null>(null)
   const [showIO, setShowIO] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
+  const [openLevelVideo, setOpenLevelVideo] = useState<number | null>(null)
 
   const [ioText, setIoText] = useState('')
   const [ioMessage, setIoMessage] = useState<{ type: 'ok' | 'error'; text: string; details?: string[] } | null>(null)
@@ -471,6 +472,69 @@ const KWC2026 = () => {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* 各 Level 招式範例影片 */}
+        <div className="mt-5">
+          <h2 className="mb-2 px-1 text-sm font-bold text-gray-700 dark:text-neutral-300">
+            <i className="bi bi-collection-play text-red-500 mr-1"></i>
+            招式範例影片
+          </h2>
+          <div className="grid gap-2">
+            {LEVEL_VIDEOS.map(video => {
+              const open = openLevelVideo === video.level
+              return (
+                <div
+                  key={video.level}
+                  className="rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenLevelVideo(prev => (prev === video.level ? null : video.level))}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-neutral-800/60"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-bold text-gray-800 dark:text-white">
+                        <i className="bi bi-youtube text-red-500 mr-1"></i>
+                        Level {video.level} 招式範例
+                      </span>
+                    </span>
+                    <i className={`bi bi-chevron-down transition-transform ${open ? 'rotate-180' : ''}`}></i>
+                  </button>
+                  <AnimatePresence>
+                    {open && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="aspect-video bg-black">
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?rel=0`}
+                            title={`KWC 2026 Level ${video.level} 招式範例影片`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                        <p className="px-4 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                          <a
+                            href={video.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            在 YouTube 開啟
+                          </a>
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <p className="mt-5 text-center text-xs text-gray-400 dark:text-neutral-600">

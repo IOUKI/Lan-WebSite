@@ -18,6 +18,40 @@ export const PRACTICE_VIDEO = {
   credit: 'Nick Gallagher',
 }
 
+// 各 Level 的招式範例影片
+export type LevelVideo = {
+  level: number
+  youtubeId: string
+  url: string
+}
+
+const LEVEL_VIDEO_IDS: Record<number, string> = {
+  1: 'a88rJYgQjmA',
+  2: 've03LgyJDNk',
+  3: 'uuizCC8CW5M',
+  4: 'dsqvkWVaN5s',
+  5: '84Uc0awvpa8',
+  6: 'l7zGbh3bJk0',
+  7: 'JCeEcePT5RI',
+  8: 'udj7XabJYNM',
+  9: '-wTAup5aH74',
+  10: 'N6HnoElgZm0',
+  11: 'ZgZyB3RXzSA',
+  12: 'csmVA-LdLtk',
+  13: 'uA3QL7h7Abk',
+  14: 'UeHKo3dvAn4',
+  15: 'Kv2ugmS6tWQ',
+}
+
+export const LEVEL_VIDEOS: LevelVideo[] = Object.keys(LEVEL_VIDEO_IDS)
+  .map(Number)
+  .sort((a, b) => a - b)
+  .map(level => ({
+    level,
+    youtubeId: LEVEL_VIDEO_IDS[level],
+    url: `https://www.youtube.com/watch?v=${LEVEL_VIDEO_IDS[level]}`,
+  }))
+
 // [英文名稱, 日文名稱]
 const RAW: Record<number, [string, string][]> = {
   1: [
