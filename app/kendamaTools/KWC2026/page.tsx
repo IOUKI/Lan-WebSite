@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import TrickPicker from '@/components/kwc2026/TrickPicker'
 import PracticeOverlay from '@/components/kwc2026/PracticeOverlay'
 import { PRACTICE_VIDEO, getTrick, type Trick } from '@/components/kwc2026/tricks'
+import { useLongPressReorder } from '@/components/kwc2026/useLongPressReorder'
 import {
   FINAL_MAX_SLOTS,
   MODES,
@@ -83,15 +84,21 @@ const KWC2026 = () => {
     })
   }
 
-  const moveSlot = (index: number, dir: -1 | 1) => {
-    setSelections(prev => {
-      const list = [...prev[mode]]
-      const target = index + dir
-      if (target < 0 || target >= list.length) return prev
-      ;[list[index], list[target]] = [list[target], list[index]]
-      return { ...prev, [mode]: list }
-    })
-  }
+  /** 把 from 位置的招式搬到 to 位置（海選可跨回合搬移） */
+  const moveSlotTo = useCallback(
+    (from: number, to: number) => {
+      setSelections(prev => {
+        const list = [...prev[mode]]
+        if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return prev
+        const [item] = list.splice(from, 1)
+        list.splice(to, 0, item)
+        return { ...prev, [mode]: list }
+      })
+    },
+    [mode]
+  )
+
+  const drag = useLongPressReorder(moveSlotTo)
 
   const resetMode = () => {
     if (!window.confirm(`確定要清空「${modeConfig.label}」的所有招式嗎？`)) return
@@ -223,6 +230,11 @@ const KWC2026 = () => {
             <i className="bi bi-info-circle mr-1"></i>
             {modeConfig.description}
           </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-neutral-500">
+            <i className="bi bi-hand-index mr-1"></i>
+            長按招式再上下拖曳即可調整順序
+            {modeConfig.roundSize !== null && '，第一回合與第二回合之間也可以互相拖移'}
+          </p>
         </div>
 
         {/* 分數面板 */}
@@ -278,20 +290,39 @@ const KWC2026 = () => {
                 {roundSlots.map((id, i) => {
                   const index = round.start + i
                   const trick = getTrick(id)
+                  const dragging = drag.dragIndex === index
                   return (
                     <div
                       key={index}
-                      className={`rounded-xl border transition-colors ${
+                      ref={drag.registerItem(index)}
+                      onPointerDown={drag.onPointerDown(index)}
+                      style={{ touchAction: drag.dragIndex !== null ? 'none' : undefined }}
+                      className={`rounded-xl border transition-all ${
                         trick
                           ? 'border-gray-200 dark:border-neutral-800'
                           : 'border-dashed border-gray-300 dark:border-neutral-700'
-                      }`}
+                      } ${
+                        dragging
+                          ? 'relative z-10 scale-[1.02] border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-lg shadow-blue-500/20'
+                          : ''
+                      } ${drag.dragIndex !== null && !dragging ? 'opacity-60' : ''}`}
                     >
                       <div className="flex items-stretch">
+                        <span
+                          className={`shrink-0 pl-2 flex items-center ${
+                            dragging ? 'text-blue-500' : 'text-gray-300 dark:text-neutral-600'
+                          }`}
+                          aria-hidden="true"
+                        >
+                          <i className="bi bi-grip-vertical"></i>
+                        </span>
                         <button
                           type="button"
-                          onClick={() => setPickerSlot(index)}
-                          className="flex-1 min-w-0 text-left p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-neutral-800/60 rounded-l-xl"
+                          onClick={() => {
+                            if (drag.consumeDrag()) return
+                            setPickerSlot(index)
+                          }}
+                          className="flex-1 min-w-0 text-left py-3 pl-2 pr-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-neutral-800/60"
                         >
                           <span className="shrink-0 size-8 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 inline-flex items-center justify-center text-sm font-bold">
                             {index + 1}
@@ -306,11 +337,8 @@ const KWC2026 = () => {
                                   {trick.ja}
                                 </span>
                               </span>
-                              <span className="shrink-0 text-right">
-                                <span className="block text-[10px] text-gray-400">Lv{trick.level}</span>
-                                <span className="block text-base font-bold text-blue-600 dark:text-blue-400">
-                                  {scoreOfTrick(trick, modeConfig)}
-                                </span>
+                              <span className="shrink-0 text-base font-bold text-blue-600 dark:text-blue-400">
+                                {trick.level}-{trick.no}
                               </span>
                             </>
                           ) : (
@@ -324,25 +352,10 @@ const KWC2026 = () => {
                           <div className="shrink-0 flex flex-col justify-center gap-0.5 pr-2">
                             <button
                               type="button"
-                              onClick={() => moveSlot(index, -1)}
-                              disabled={index === 0}
-                              className="size-6 rounded text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none"
-                              aria-label="上移"
-                            >
-                              <i className="bi bi-chevron-up text-xs"></i>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveSlot(index, 1)}
-                              disabled={index === slots.length - 1}
-                              className="size-6 rounded text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none"
-                              aria-label="下移"
-                            >
-                              <i className="bi bi-chevron-down text-xs"></i>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeSlot(index)}
+                              onClick={() => {
+                                if (drag.consumeDrag()) return
+                                removeSlot(index)
+                              }}
                               disabled={slots.length <= 1}
                               className="size-6 rounded text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none"
                               aria-label="刪除"

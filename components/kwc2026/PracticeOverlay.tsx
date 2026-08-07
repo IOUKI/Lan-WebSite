@@ -297,11 +297,8 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                           {trick.ja}
                         </span>
                       </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-[10px] text-gray-400">Lv{trick.level}</span>
-                        <span className="block text-sm font-bold text-blue-600 dark:text-blue-400">
-                          {scoreOfTrick(trick, mode)}
-                        </span>
+                      <span className="shrink-0 text-sm font-bold text-blue-600 dark:text-blue-400">
+                        {trick.level}-{trick.no}
                       </span>
                     </div>
                   </button>
