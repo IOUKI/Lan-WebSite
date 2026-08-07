@@ -232,7 +232,7 @@ const KWC2026 = () => {
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-neutral-500">
             <i className="bi bi-hand-index mr-1"></i>
-            長按招式再上下拖曳即可調整順序
+            長按招式再上下拖曳即可調整順序，放開手指後套用
             {modeConfig.roundSize !== null && '，第一回合與第二回合之間也可以互相拖移'}
           </p>
         </div>
@@ -291,6 +291,10 @@ const KWC2026 = () => {
                   const index = round.start + i
                   const trick = getTrick(id)
                   const dragging = drag.dragIndex === index
+                  // 放開手指後會插入的位置：往上搬顯示在該列上方，往下搬顯示在下方
+                  const isTarget = drag.dragIndex !== null && drag.targetIndex === index && !dragging
+                  const lineAbove = isTarget && drag.targetIndex! < drag.dragIndex!
+                  const lineBelow = isTarget && drag.targetIndex! > drag.dragIndex!
                   return (
                     <div
                       key={index}
@@ -301,16 +305,25 @@ const KWC2026 = () => {
                         WebkitUserSelect: 'none',
                         WebkitTouchCallout: 'none',
                       }}
-                      className={`select-none rounded-xl border transition-all ${
+                      className={`relative select-none rounded-xl border transition-all ${
                         trick
                           ? 'border-gray-200 dark:border-neutral-800'
                           : 'border-dashed border-gray-300 dark:border-neutral-700'
                       } ${
                         dragging
-                          ? 'relative z-10 scale-[1.02] border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-lg shadow-blue-500/20'
+                          ? 'z-10 scale-[1.02] border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-lg shadow-blue-500/20'
                           : ''
-                      } ${drag.dragIndex !== null && !dragging ? 'opacity-60' : ''}`}
+                      } ${drag.dragIndex !== null && !dragging && !isTarget ? 'opacity-50' : ''}`}
                     >
+                      {/* 插入位置指示線（絕對定位，不影響版面高度） */}
+                      {(lineAbove || lineBelow) && (
+                        <span
+                          className={`pointer-events-none absolute inset-x-1 h-1 rounded-full bg-blue-500 ${
+                            lineAbove ? '-top-1.5' : '-bottom-1.5'
+                          }`}
+                          aria-hidden="true"
+                        />
+                      )}
                       <div className="flex items-stretch">
                         <span
                           className={`shrink-0 pl-2 flex items-center ${

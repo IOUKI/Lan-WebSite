@@ -1,4 +1,8 @@
 // 長按拖曳排序：長按招式列後即可上下拖移，跨回合也能互換位置
+//
+// 命中判定使用「按下拖曳當下的版面快照」，而且放開手指才真正搬移。
+// 因為招式名稱長度不同、每列高度不一樣，若邊拖邊即時搬移，
+// 版面會在指標底下重排，短招與長招之間就會來回跳動。
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -10,9 +14,14 @@ const MOVE_TOLERANCE = 8
 const EDGE = 72
 const EDGE_SPEED = 12
 
+/** 以文件座標（含捲動量）記錄的版面快照 */
+type Snapshot = { index: number; top: number; bottom: number }
+
 export type LongPressReorder = {
-  /** 目前正在被拖曳的 index，沒有拖曳時為 null */
+  /** 正在被拖曳的 index，沒有拖曳時為 null */
   dragIndex: number | null
+  /** 放開手指後會落在的 index，沒有拖曳時為 null */
+  targetIndex: number | null
   /** 綁在每個可拖曳項目上的 ref callback */
   registerItem: (index: number) => (el: HTMLDivElement | null) => void
   /** 綁在每個可拖曳項目上的 onPointerDown */
@@ -30,8 +39,11 @@ export const useLongPressReorder = (
   enabled = true
 ): LongPressReorder => {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [targetIndex, setTargetIndex] = useState<number | null>(null)
 
   const dragIndexRef = useRef<number | null>(null)
+  const targetIndexRef = useRef<number | null>(null)
+  const snapshotRef = useRef<Snapshot[]>([])
   const startRef = useRef<{ x: number; y: number; index: number } | null>(null)
   const itemsRef = useRef(new Map<number, HTMLDivElement>())
   const timerRef = useRef<number | null>(null)
@@ -53,6 +65,7 @@ export const useLongPressReorder = (
     }
   }, [])
 
+  /** 結束這次操作（不搬移） */
   const finish = useCallback(() => {
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current)
@@ -62,43 +75,44 @@ export const useLongPressReorder = (
     detachRef.current?.()
     detachRef.current = null
     startRef.current = null
+    snapshotRef.current = []
     dragIndexRef.current = null
+    targetIndexRef.current = null
     setDragIndex(null)
+    setTargetIndex(null)
     document.body.style.userSelect = ''
   }, [stopAutoScroll])
 
   // 離開頁面前清乾淨
   useEffect(() => finish, [finish])
 
-  /** 依指標位置決定要落在哪一格，必要時即時搬移 */
+  /** 依指標位置更新「會落在哪一格」，只改指示線、不動資料 */
   const updateTarget = useCallback((clientY: number) => {
     const from = dragIndexRef.current
     if (from === null) return
 
-    const entries = Array.from(itemsRef.current.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([index, el]) => ({ index, rect: el.getBoundingClientRect() }))
-    if (entries.length === 0) return
+    const snapshot = snapshotRef.current
+    if (snapshot.length === 0) return
 
-    let to = entries[0].index
+    const pointer = clientY + window.scrollY
+    let to = snapshot[0].index
     let best = Infinity
-    for (const entry of entries) {
-      if (clientY >= entry.rect.top && clientY <= entry.rect.bottom) {
-        to = entry.index
+    for (const item of snapshot) {
+      if (pointer >= item.top && pointer <= item.bottom) {
+        to = item.index
         best = -1
         break
       }
-      const distance = clientY < entry.rect.top ? entry.rect.top - clientY : clientY - entry.rect.bottom
+      const distance = pointer < item.top ? item.top - pointer : pointer - item.bottom
       if (distance < best) {
         best = distance
-        to = entry.index
+        to = item.index
       }
     }
 
-    if (to !== from) {
-      onMoveRef.current(from, to)
-      dragIndexRef.current = to
-      setDragIndex(to)
+    if (to !== targetIndexRef.current) {
+      targetIndexRef.current = to
+      setTargetIndex(to)
     }
   }, [])
 
@@ -157,7 +171,13 @@ export const useLongPressReorder = (
         updateTarget(ev.clientY)
         handleAutoScroll(ev.clientY)
       }
-      const handleUp = () => finish()
+      // 放開手指才真的搬移，過程中版面完全不動
+      const handleUp = () => {
+        const from = dragIndexRef.current
+        const to = targetIndexRef.current
+        finish()
+        if (from !== null && to !== null && from !== to) onMoveRef.current(from, to)
+      }
       // 拖曳中吃掉 touchmove，避免頁面跟著捲動
       const handleTouchMove = (ev: TouchEvent) => {
         if (dragIndexRef.current !== null) ev.preventDefault()
@@ -180,9 +200,24 @@ export const useLongPressReorder = (
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null
         if (!startRef.current) return
+
+        // 拍下目前版面（文件座標），整段拖曳都以這份快照判定落點
+        snapshotRef.current = Array.from(itemsRef.current.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([itemIndex, el]) => {
+            const rect = el.getBoundingClientRect()
+            return {
+              index: itemIndex,
+              top: rect.top + window.scrollY,
+              bottom: rect.bottom + window.scrollY,
+            }
+          })
+
         dragIndexRef.current = index
+        targetIndexRef.current = index
         draggedRef.current = true
         setDragIndex(index)
+        setTargetIndex(index)
         document.body.style.userSelect = 'none'
         navigator.vibrate?.(15)
       }, LONG_PRESS_MS)
@@ -196,5 +231,5 @@ export const useLongPressReorder = (
     return true
   }, [])
 
-  return { dragIndex, registerItem, onPointerDown, consumeDrag }
+  return { dragIndex, targetIndex, registerItem, onPointerDown, consumeDrag }
 }
