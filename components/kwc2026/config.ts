@@ -4,10 +4,9 @@ import { TRICKS, TRICK_MAP, type Trick } from './tricks'
 
 export type ModeKey = 'prelimNormal' | 'prelimSpecial' | 'final'
 
+// 這裡只放賽制數值，所有顯示文字都在 i18n.ts
 export type ModeConfig = {
   key: ModeKey
-  label: string
-  short: string
   minLevel: number
   maxLevel: number
   /** sum = level 相加（海選）；square = level 平方後相加（決賽） */
@@ -16,50 +15,40 @@ export type ModeConfig = {
   fixedSlots: number | null
   /** 每回合招數；null 代表整份清單為一回合 */
   roundSize: number | null
-  rounds: string[]
+  roundCount: number
   roundSeconds: number
-  description: string
 }
 
 export const MODES: Record<ModeKey, ModeConfig> = {
   prelimNormal: {
     key: 'prelimNormal',
-    label: '海選・一般',
-    short: '一般',
     minLevel: 1,
     maxLevel: 10,
     scoring: 'sum',
     fixedSlots: 10,
     roundSize: 5,
-    rounds: ['第一回合', '第二回合'],
+    roundCount: 2,
     roundSeconds: 180,
-    description: '兩回合、每回合 3 分鐘各打 5 招，共 10 招。可選 Level 1～10，分數為各招 Level 相加。',
   },
   prelimSpecial: {
     key: 'prelimSpecial',
-    label: '海選・特殊',
-    short: '特殊',
     minLevel: 4,
     maxLevel: 13,
     scoring: 'sum',
     fixedSlots: 10,
     roundSize: 5,
-    rounds: ['第一回合', '第二回合'],
+    roundCount: 2,
     roundSeconds: 180,
-    description: '兩回合、每回合 3 分鐘各打 5 招，共 10 招。只能選 Level 4～13，分數為各招 Level 相加。',
   },
   final: {
     key: 'final',
-    label: '決賽',
-    short: '決賽',
     minLevel: 1,
     maxLevel: 15,
     scoring: 'square',
     fixedSlots: null,
     roundSize: null,
-    rounds: ['決賽路線'],
+    roundCount: 1,
     roundSeconds: 180,
-    description: '一回合 3 分鐘，全部 Level 皆可選、招數不限，並且要照挑選的順序完成。分數為各招 Level 平方後相加。',
   },
 }
 
@@ -82,15 +71,15 @@ export const totalScore = (ids: (string | null)[], mode: ModeConfig) =>
 export const maxScore = (mode: ModeConfig, slotCount: number) =>
   scoreOfLevel(mode.maxLevel, mode) * slotCount
 
-export type RoundRange = { index: number; label: string; start: number; end: number }
+/** 回合範圍；label 由呼叫端依語言補上 */
+export type RoundRange = { index: number; start: number; end: number }
 
 export const getRounds = (mode: ModeConfig, length: number): RoundRange[] => {
   if (mode.roundSize === null) {
-    return [{ index: 0, label: mode.rounds[0], start: 0, end: length }]
+    return [{ index: 0, start: 0, end: length }]
   }
-  return mode.rounds.map((label, i) => ({
+  return Array.from({ length: mode.roundCount }, (_, i) => ({
     index: i,
-    label,
     start: i * mode.roundSize!,
     end: (i + 1) * mode.roundSize!,
   }))
@@ -157,9 +146,20 @@ export const buildExport = (selections: Selections, exportedAt: string) => ({
 export const exportToJson = (selections: Selections, exportedAt: string) =>
   JSON.stringify(buildExport(selections, exportedAt), null, 2)
 
+/** 匯入時遇到的問題；文字由 i18n.ts 依語言組裝 */
+export type ImportWarning =
+  | { code: 'noData' }
+  | { code: 'badFormat'; mode: ModeKey }
+  | { code: 'unknownTrick'; mode: ModeKey; id: string }
+  | { code: 'levelOutOfRange'; mode: ModeKey; id: string; level: number }
+  | { code: 'duplicate'; mode: ModeKey; id: string }
+  | { code: 'overflow'; mode: ModeKey; max: number }
+
 /** 把任意輸入整理成合法的 Selections，並回報過程中的問題 */
-export const normalizeSelections = (input: unknown): { selections: Selections; warnings: string[] } => {
-  const warnings: string[] = []
+export const normalizeSelections = (
+  input: unknown
+): { selections: Selections; warnings: ImportWarning[] } => {
+  const warnings: ImportWarning[] = []
   const result = emptySelections()
 
   const source =
@@ -168,7 +168,7 @@ export const normalizeSelections = (input: unknown): { selections: Selections; w
       : input
 
   if (!source || typeof source !== 'object') {
-    return { selections: result, warnings: ['找不到招式資料'] }
+    return { selections: result, warnings: [{ code: 'noData' }] }
   }
 
   for (const key of MODE_ORDER) {
@@ -176,7 +176,7 @@ export const normalizeSelections = (input: unknown): { selections: Selections; w
     const raw = (source as Record<string, unknown>)[key]
     if (raw === undefined) continue
     if (!Array.isArray(raw)) {
-      warnings.push(`${mode.label}：資料格式不正確，已略過`)
+      warnings.push({ code: 'badFormat', mode: key })
       continue
     }
 
@@ -185,15 +185,15 @@ export const normalizeSelections = (input: unknown): { selections: Selections; w
       if (typeof item !== 'string' || item === '') return null
       const trick = TRICK_MAP[item]
       if (!trick) {
-        warnings.push(`${mode.label}：找不到招式代碼 ${item}，已清空該格`)
+        warnings.push({ code: 'unknownTrick', mode: key, id: item })
         return null
       }
       if (trick.level < mode.minLevel || trick.level > mode.maxLevel) {
-        warnings.push(`${mode.label}：${item}（Level ${trick.level}）超出可選範圍，已清空該格`)
+        warnings.push({ code: 'levelOutOfRange', mode: key, id: item, level: trick.level })
         return null
       }
       if (seen.has(item)) {
-        warnings.push(`${mode.label}：${item} 重複出現，已清空該格`)
+        warnings.push({ code: 'duplicate', mode: key, id: item })
         return null
       }
       seen.add(item)
@@ -204,13 +204,13 @@ export const normalizeSelections = (input: unknown): { selections: Selections; w
       const fixed = ids.slice(0, mode.fixedSlots)
       while (fixed.length < mode.fixedSlots) fixed.push(null)
       if (ids.length > mode.fixedSlots) {
-        warnings.push(`${mode.label}：超過 ${mode.fixedSlots} 招的部分已捨棄`)
+        warnings.push({ code: 'overflow', mode: key, max: mode.fixedSlots })
       }
       result[key] = fixed
     } else {
       const capped = ids.slice(0, FINAL_MAX_SLOTS)
       if (ids.length > FINAL_MAX_SLOTS) {
-        warnings.push(`${mode.label}：超過 ${FINAL_MAX_SLOTS} 招的部分已捨棄`)
+        warnings.push({ code: 'overflow', mode: key, max: FINAL_MAX_SLOTS })
       }
       result[key] = capped.length > 0 ? capped : Array(FINAL_DEFAULT_SLOTS).fill(null)
     }
@@ -219,7 +219,7 @@ export const normalizeSelections = (input: unknown): { selections: Selections; w
   return { selections: result, warnings }
 }
 
-export const parseImport = (text: string): { selections: Selections; warnings: string[] } => {
+export const parseImport = (text: string): { selections: Selections; warnings: ImportWarning[] } => {
   const parsed = JSON.parse(text)
   return normalizeSelections(parsed)
 }

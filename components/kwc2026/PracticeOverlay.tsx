@@ -4,16 +4,19 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { PRACTICE_VIDEO, type Trick } from './tricks'
 import { formatTime, scoreOfTrick, type ModeConfig } from './config'
+import { trickNames, type Dict, type Lang } from './i18n'
 
 type Props = {
   open: boolean
   mode: ModeConfig
+  t: Dict
+  lang: Lang
   roundLabel: string
   tricks: Trick[]
   onClose: () => void
 }
 
-const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => {
+const PracticeOverlay = ({ open, mode, t, lang, roundLabel, tricks, onClose }: Props) => {
   const totalMs = mode.roundSeconds * 1000
   const [remaining, setRemaining] = useState(totalMs)
   const [running, setRunning] = useState(false)
@@ -129,8 +132,8 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
           {/* 頂部：標題 + 關閉 */}
           <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-neutral-800">
             <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-neutral-400">{mode.label}</p>
-              <h3 className="font-bold text-gray-800 dark:text-white truncate">{roundLabel} 練習</h3>
+              <p className="text-xs text-gray-500 dark:text-neutral-400">{t.modes[mode.key].label}</p>
+              <h3 className="font-bold text-gray-800 dark:text-white truncate">{t.practiceTitle(roundLabel)}</h3>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -143,13 +146,13 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                 }`}
               >
                 <i className="bi bi-youtube mr-1"></i>
-                計時影片
+                {t.timerVideoButton}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="size-9 inline-flex justify-center items-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                aria-label="結束練習"
+                aria-label={t.endPractice}
               >
                 <i className="bi bi-x-lg"></i>
               </button>
@@ -164,22 +167,20 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                   <iframe
                     className="w-full h-full"
                     src={videoSrc}
-                    title="KWC 2026 計時練習影片"
+                    title={`KWC 2026 — ${t.timerVideo}`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
                 </div>
                 <div className="flex items-center justify-center gap-3 py-1.5">
-                  <p className="text-[11px] text-neutral-400">
-                    計時練習影片由 {PRACTICE_VIDEO.credit} 製作
-                  </p>
+                  <p className="text-[11px] text-neutral-400">{t.videoCredit(PRACTICE_VIDEO.credit)}</p>
                   <button
                     type="button"
                     onClick={reset}
                     className="py-0.5 px-2 text-[11px] rounded-md border border-neutral-700 text-neutral-300 hover:bg-neutral-800"
                   >
                     <i className="bi bi-arrow-counterclockwise mr-1"></i>
-                    重來
+                    {t.restart}
                   </button>
                 </div>
               </div>
@@ -206,7 +207,7 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                       }`}
                     >
                       <i className={`bi ${running ? 'bi-pause-fill' : 'bi-play-fill'} mr-1`}></i>
-                      {running ? '暫停' : remaining === totalMs ? '開始' : '繼續'}
+                      {running ? t.pause : remaining === totalMs ? t.start : t.resume}
                     </button>
                   )}
                   <button
@@ -215,7 +216,7 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                     className="py-2 px-4 text-base rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800"
                   >
                     <i className="bi bi-arrow-counterclockwise mr-1"></i>
-                    重來
+                    {t.restart}
                   </button>
                 </div>
               </div>
@@ -223,17 +224,17 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
 
             <div className="px-4 pt-4 pb-4 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 py-2">
-                <p className="text-[11px] text-gray-500 dark:text-neutral-400">完成</p>
+                <p className="text-[11px] text-gray-500 dark:text-neutral-400">{t.doneCount}</p>
                 <p className="text-lg font-bold text-gray-800 dark:text-white">
                   {doneCount}/{tricks.length}
                 </p>
               </div>
               <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 py-2">
-                <p className="text-[11px] text-blue-600 dark:text-blue-300">得分</p>
+                <p className="text-[11px] text-blue-600 dark:text-blue-300">{t.gained}</p>
                 <p className="text-lg font-bold text-blue-600 dark:text-blue-300">{gained}</p>
               </div>
               <div className="rounded-xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 py-2">
-                <p className="text-[11px] text-gray-500 dark:text-neutral-400">滿分</p>
+                <p className="text-[11px] text-gray-500 dark:text-neutral-400">{t.possible}</p>
                 <p className="text-lg font-bold text-gray-800 dark:text-white">{possible}</p>
               </div>
             </div>
@@ -246,9 +247,9 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
               >
                 {doneCount === tricks.length && tricks.length > 0
                   ? showVideo
-                    ? `全部完成！得分 ${gained} 分`
-                    : `全部完成！用時 ${formatTime(usedMs)}，得分 ${gained} 分`
-                  : `時間到，完成 ${doneCount} 招、得分 ${gained} 分`}
+                    ? t.allDone(gained)
+                    : t.allDoneWithTime(formatTime(usedMs), gained)
+                  : t.timeUp(doneCount, gained)}
               </motion.p>
             )}
           </div>
@@ -257,7 +258,7 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
           <div className="flex-1 overflow-y-auto p-3">
             {sequential && !finished && (
               <p className="text-xs text-center text-gray-500 dark:text-neutral-400 mb-2">
-                決賽需依序完成，只能點選目前這一招
+                {t.sequentialHint}
               </p>
             )}
             <div className="grid gap-2 max-w-2xl mx-auto">
@@ -265,6 +266,7 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                 const isDone = done[i]
                 const isCurrent = sequential && i === firstUndone && !finished
                 const clickable = canToggle(i)
+                const names = trickNames(trick, lang)
                 return (
                   <button
                     key={`${trick.id}-${i}`}
@@ -291,10 +293,10 @@ const PracticeOverlay = ({ open, mode, roundLabel, tricks, onClose }: Props) => 
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium text-gray-800 dark:text-white break-words">
-                          {trick.en}
+                          {names.primary}
                         </span>
                         <span className="block text-xs text-gray-500 dark:text-neutral-400 break-words">
-                          {trick.ja}
+                          {names.secondary}
                         </span>
                       </span>
                       <span className="shrink-0 text-sm font-bold text-blue-600 dark:text-blue-400">

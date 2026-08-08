@@ -4,10 +4,13 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { TRICKS, type Trick } from './tricks'
 import { scoreOfTrick, type ModeConfig } from './config'
+import { trickNames, type Dict, type Lang } from './i18n'
 
 type Props = {
   open: boolean
   mode: ModeConfig
+  t: Dict
+  lang: Lang
   /** 目前這一格已選的招式 */
   currentId: string | null
   /** 同一份清單中其他格已選的招式（用來標示重複） */
@@ -18,7 +21,7 @@ type Props = {
   onClose: () => void
 }
 
-const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onClear, onClose }: Props) => {
+const TrickPicker = ({ open, mode, t, lang, currentId, usedIds, slotLabel, onSelect, onClear, onClose }: Props) => {
   const [keyword, setKeyword] = useState('')
   const [levelFilter, setLevelFilter] = useState<number | null>(null)
 
@@ -92,16 +95,18 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
             <div className="p-4 border-b border-gray-200 dark:border-neutral-700">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="font-bold text-gray-800 dark:text-white truncate">選擇招式・{slotLabel}</h3>
+                  <h3 className="font-bold text-gray-800 dark:text-white truncate">
+                    {t.pickerTitle(slotLabel)}
+                  </h3>
                   <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-                    {mode.label}：可選 Level {mode.minLevel}～{mode.maxLevel}・招式不可重複
+                    {t.pickerSubtitle(t.modes[mode.key].label, mode.minLevel, mode.maxLevel)}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
                   className="shrink-0 size-8 inline-flex justify-center items-center rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
-                  aria-label="關閉"
+                  aria-label={t.close}
                 >
                   <i className="bi bi-x-lg text-sm"></i>
                 </button>
@@ -113,7 +118,7 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
                   type="search"
                   value={keyword}
                   onChange={e => setKeyword(e.target.value)}
-                  placeholder="搜尋招式（英文 / 日文）"
+                  placeholder={t.searchPlaceholder}
                   className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
@@ -128,7 +133,7 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
                       : 'border-gray-300 dark:border-neutral-600 text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
                   }`}
                 >
-                  全部
+                  {t.filterAll}
                 </button>
                 {levels.map(lv => (
                   <button
@@ -141,7 +146,7 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
                         : 'border-gray-300 dark:border-neutral-600 text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
                     }`}
                   >
-                    Lv{lv}
+                    {t.levelChip(lv)}
                   </button>
                 ))}
               </div>
@@ -150,21 +155,20 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
             {/* List */}
             <div className="flex-1 overflow-y-auto p-3">
               {grouped.length === 0 && (
-                <p className="text-center text-sm text-gray-500 dark:text-neutral-400 py-10">找不到符合的招式</p>
+                <p className="text-center text-sm text-gray-500 dark:text-neutral-400 py-10">{t.noResult}</p>
               )}
               {grouped.map(([level, tricks]) => (
                 <div key={level} className="mb-4 last:mb-0">
                   <div className="sticky top-0 z-10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur px-1 py-1 text-xs font-semibold text-gray-500 dark:text-neutral-400">
-                    Level {level}
-                    <span className="ml-2 font-normal">
-                      （本模式此招 {scoreOfTrick(tricks[0], mode)} 分）
-                    </span>
+                    {t.levelHeading(level)}
+                    <span className="ml-2 font-normal">{t.levelPoints(scoreOfTrick(tricks[0], mode))}</span>
                   </div>
                   <div className="grid gap-1.5">
                     {tricks.map(trick => {
                       const isCurrent = trick.id === currentId
                       // 同一份清單不能重複選招，其他格已選的招式不可再選
                       const isUsed = !isCurrent && usedIds.includes(trick.id)
+                      const names = trickNames(trick, lang)
                       return (
                         <button
                           key={trick.id}
@@ -185,15 +189,15 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block text-sm font-medium text-gray-800 dark:text-white break-words">
-                                {trick.en}
+                                {names.primary}
                               </span>
                               <span className="block text-xs text-gray-500 dark:text-neutral-400 mt-0.5 break-words">
-                                {trick.ja}
+                                {names.secondary}
                               </span>
                             </span>
                             {isUsed && (
                               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-                                已選
+                                {t.used}
                               </span>
                             )}
                             {isCurrent && <i className="bi bi-check-lg shrink-0 text-blue-500"></i>}
@@ -214,14 +218,14 @@ const TrickPicker = ({ open, mode, currentId, usedIds, slotLabel, onSelect, onCl
                 disabled={!currentId}
                 className="py-2 px-3 text-sm font-medium rounded-lg border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:pointer-events-none"
               >
-                清空此格
+                {t.clearSlot}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="py-2 px-4 text-sm font-medium rounded-lg bg-gray-800 text-white hover:bg-gray-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               >
-                關閉
+                {t.close}
               </button>
             </div>
           </motion.div>

@@ -6,6 +6,7 @@ import TrickPicker from '@/components/kwc2026/TrickPicker'
 import PracticeOverlay from '@/components/kwc2026/PracticeOverlay'
 import { LEVEL_VIDEOS, PRACTICE_VIDEO, getTrick, type Trick } from '@/components/kwc2026/tricks'
 import { useLongPressReorder } from '@/components/kwc2026/useLongPressReorder'
+import { LANGS, trickNames, useKwcLang } from '@/components/kwc2026/i18n'
 import {
   FINAL_MAX_SLOTS,
   MODES,
@@ -19,13 +20,14 @@ import {
   parseImport,
   saveMode,
   saveSelections,
-  scoreOfTrick,
   totalScore,
+  type ImportWarning,
   type ModeKey,
   type Selections,
 } from '@/components/kwc2026/config'
 
 const KWC2026 = () => {
+  const { lang, setLang, t } = useKwcLang()
   const [loaded, setLoaded] = useState(false)
   const [mode, setMode] = useState<ModeKey>('prelimNormal')
   const [selections, setSelections] = useState<Selections>(emptySelections)
@@ -37,7 +39,12 @@ const KWC2026 = () => {
   const [openLevelVideo, setOpenLevelVideo] = useState<number | null>(null)
 
   const [ioText, setIoText] = useState('')
-  const [ioMessage, setIoMessage] = useState<{ type: 'ok' | 'error'; text: string; details?: string[] } | null>(null)
+  // 訊息只存語意，實際文字在畫面上依當下語言組裝，切換語言時也會跟著變
+  const [ioMessage, setIoMessage] = useState<
+    | { type: 'ok' | 'error'; key: 'exported' | 'copied' | 'copyFailed' | 'imported' | 'badJson' }
+    | { type: 'error'; key: 'importedWithWarnings'; warnings: ImportWarning[] }
+    | null
+  >(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const modeConfig = MODES[mode]
@@ -102,7 +109,7 @@ const KWC2026 = () => {
   const drag = useLongPressReorder(moveSlotTo)
 
   const resetMode = () => {
-    if (!window.confirm(`確定要清空「${modeConfig.label}」的所有招式嗎？`)) return
+    if (!window.confirm(t.clearConfirm(t.modes[mode].label))) return
     setSelections(prev => ({ ...prev, [mode]: emptySelections()[mode] }))
   }
 
@@ -133,16 +140,16 @@ const KWC2026 = () => {
     a.download = `kwc2026-tricks-${stamp}.json`
     a.click()
     URL.revokeObjectURL(url)
-    setIoMessage({ type: 'ok', text: '已匯出 JSON 檔案' })
+    setIoMessage({ type: 'ok', key: 'exported' })
   }
 
   const handleCopy = async () => {
     const json = exportToJson(selections, new Date().toISOString())
     try {
       await navigator.clipboard.writeText(json)
-      setIoMessage({ type: 'ok', text: '已複製到剪貼簿' })
+      setIoMessage({ type: 'ok', key: 'copied' })
     } catch {
-      setIoMessage({ type: 'error', text: '複製失敗，請手動選取下方文字複製' })
+      setIoMessage({ type: 'error', key: 'copyFailed' })
     }
   }
 
@@ -150,15 +157,33 @@ const KWC2026 = () => {
     try {
       const { selections: imported, warnings } = parseImport(text)
       setSelections(imported)
-      setIoMessage({
-        type: warnings.length ? 'error' : 'ok',
-        text: warnings.length ? `已匯入，但有 ${warnings.length} 個問題` : '匯入成功！',
-        details: warnings,
-      })
+      setIoMessage(
+        warnings.length
+          ? { type: 'error', key: 'importedWithWarnings', warnings }
+          : { type: 'ok', key: 'imported' }
+      )
     } catch {
-      setIoMessage({ type: 'error', text: '匯入失敗：不是合法的 JSON 格式' })
+      setIoMessage({ type: 'error', key: 'badJson' })
     }
   }
+
+  const ioMessageText = useMemo(() => {
+    if (!ioMessage) return ''
+    switch (ioMessage.key) {
+      case 'exported':
+        return t.ioExported
+      case 'copied':
+        return t.ioCopied
+      case 'copyFailed':
+        return t.ioCopyFailed
+      case 'imported':
+        return t.ioImported
+      case 'badJson':
+        return t.ioBadJson
+      case 'importedWithWarnings':
+        return t.ioImportedWithWarnings(ioMessage.warnings.length)
+    }
+  }, [ioMessage, t])
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -188,6 +213,32 @@ const KWC2026 = () => {
   return (
     <>
       <div className="max-w-3xl mx-auto px-4 pb-16 sm:px-6">
+        {/* 語言切換 */}
+        <div className="flex justify-end mb-2">
+          <div
+            role="group"
+            aria-label={t.langLabel}
+            className="inline-flex rounded-full border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-0.5"
+          >
+            {LANGS.map(item => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setLang(item.key)}
+                aria-pressed={lang === item.key}
+                title={item.label}
+                className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
+                  lang === item.key
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-500 dark:text-neutral-400 hover:text-blue-500'
+                }`}
+              >
+                {item.short}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Header */}
         <motion.div
           className="text-center mb-6"
@@ -196,17 +247,14 @@ const KWC2026 = () => {
           transition={{ duration: 0.4 }}
         >
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wide bg-gradient-to-r from-blue-500 via-cyan-400 to-purple-500 bg-clip-text text-transparent">
-            KWC 2026 練習平台
+            {t.title}
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-neutral-400">
-            劍玉世界盃・海選與決賽的選招、計分與計時練習
-          </p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-neutral-400">{t.subtitle}</p>
         </motion.div>
 
         {/* 模式切換 */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           {MODE_ORDER.map(key => {
-            const config = MODES[key]
             const active = key === mode
             return (
               <button
@@ -219,7 +267,7 @@ const KWC2026 = () => {
                     : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border-gray-200 dark:border-neutral-800 hover:border-blue-400'
                 }`}
               >
-                {config.label}
+                {t.modes[key].label}
               </button>
             )
           })}
@@ -229,23 +277,23 @@ const KWC2026 = () => {
         <div className="mb-4 p-3 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800">
           <p className="text-xs leading-relaxed text-gray-600 dark:text-neutral-400">
             <i className="bi bi-info-circle mr-1"></i>
-            {modeConfig.description}
+            {t.modes[mode].description}
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-neutral-500">
             <i className="bi bi-hand-index mr-1"></i>
-            長按招式再上下拖曳即可調整順序，放開手指後套用
-            {modeConfig.roundSize !== null && '，第一回合與第二回合之間也可以互相拖移'}
+            {t.dragHint}
+            {modeConfig.roundSize !== null && t.dragHintCrossRound}
           </p>
         </div>
 
         {/* 分數面板 */}
         <div className={`grid gap-2 mb-5 ${showTheoreticalMax ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div className="rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 py-3 text-center">
-            <p className="text-[11px] text-blue-600 dark:text-blue-300">總分</p>
+            <p className="text-[11px] text-blue-600 dark:text-blue-300">{t.statTotal}</p>
             <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-300">{score}</p>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-3 text-center">
-            <p className="text-[11px] text-gray-500 dark:text-neutral-400">已選招數</p>
+            <p className="text-[11px] text-gray-500 dark:text-neutral-400">{t.statPicked}</p>
             <p className="text-2xl font-extrabold text-gray-800 dark:text-white">
               {filledCount}
               <span className="text-sm font-medium text-gray-400">/{slots.length}</span>
@@ -253,7 +301,7 @@ const KWC2026 = () => {
           </div>
           {showTheoreticalMax && (
             <div className="rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 py-3 text-center">
-              <p className="text-[11px] text-gray-500 dark:text-neutral-400">理論最高</p>
+              <p className="text-[11px] text-gray-500 dark:text-neutral-400">{t.statMax}</p>
               <p className="text-2xl font-extrabold text-gray-800 dark:text-white">{theoreticalMax}</p>
             </div>
           )}
@@ -271,9 +319,16 @@ const KWC2026 = () => {
             >
               <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 dark:border-neutral-800">
                 <div className="min-w-0">
-                  <h2 className="font-bold text-gray-800 dark:text-white">{round.label}</h2>
+                  <h2 className="font-bold text-gray-800 dark:text-white">
+                    {t.modes[mode].rounds[round.index]}
+                  </h2>
                   <p className="text-xs text-gray-500 dark:text-neutral-400">
-                    {roundFilled}/{roundSlots.length} 招・{roundScore} 分・3 分鐘
+                    {t.roundSummary(
+                      roundFilled,
+                      roundSlots.length,
+                      roundScore,
+                      Math.round(modeConfig.roundSeconds / 60)
+                    )}
                   </p>
                 </div>
                 <button
@@ -283,7 +338,7 @@ const KWC2026 = () => {
                   className="shrink-0 py-2 px-3 text-sm font-semibold rounded-lg bg-gray-800 text-white hover:bg-gray-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 disabled:opacity-40 disabled:pointer-events-none"
                 >
                   <i className="bi bi-play-fill mr-1"></i>
-                  練習
+                  {t.practice}
                 </button>
               </div>
 
@@ -291,6 +346,7 @@ const KWC2026 = () => {
                 {roundSlots.map((id, i) => {
                   const index = round.start + i
                   const trick = getTrick(id)
+                  const names = trick ? trickNames(trick, lang) : null
                   const dragging = drag.dragIndex === index
                   // 放開手指後會插入的位置：往上搬顯示在該列上方，往下搬顯示在下方
                   const isTarget = drag.dragIndex !== null && drag.targetIndex === index && !dragging
@@ -345,14 +401,14 @@ const KWC2026 = () => {
                           <span className="shrink-0 size-8 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 inline-flex items-center justify-center text-sm font-bold">
                             {index + 1}
                           </span>
-                          {trick ? (
+                          {trick && names ? (
                             <>
                               <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-medium text-gray-800 dark:text-white break-words">
-                                  {trick.en}
+                                  {names.primary}
                                 </span>
                                 <span className="block text-xs text-gray-500 dark:text-neutral-400 break-words">
-                                  {trick.ja}
+                                  {names.secondary}
                                 </span>
                               </span>
                               <span className="shrink-0 text-base font-bold text-blue-600 dark:text-blue-400">
@@ -361,7 +417,7 @@ const KWC2026 = () => {
                             </>
                           ) : (
                             <span className="flex-1 text-sm text-gray-400 dark:text-neutral-500">
-                              點擊選擇招式…
+                              {t.emptySlot}
                             </span>
                           )}
                         </button>
@@ -376,7 +432,7 @@ const KWC2026 = () => {
                               }}
                               disabled={slots.length <= 1}
                               className="size-6 rounded text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:pointer-events-none"
-                              aria-label="刪除"
+                              aria-label={t.deleteSlot}
                             >
                               <i className="bi bi-trash text-xs"></i>
                             </button>
@@ -395,7 +451,7 @@ const KWC2026 = () => {
                     className="py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-neutral-700 text-sm text-gray-500 dark:text-neutral-400 hover:border-blue-400 hover:text-blue-500 disabled:opacity-40 disabled:pointer-events-none"
                   >
                     <i className="bi bi-plus-lg mr-1"></i>
-                    新增一招
+                    {t.addSlot}
                   </button>
                 )}
               </div>
@@ -411,7 +467,7 @@ const KWC2026 = () => {
             className="py-2.5 px-3 text-sm font-medium rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 hover:border-blue-400"
           >
             <i className="bi bi-box-arrow-in-down mr-1"></i>
-            匯入 / 匯出
+            {t.ioButton}
           </button>
           <button
             type="button"
@@ -419,7 +475,7 @@ const KWC2026 = () => {
             className="py-2.5 px-3 text-sm font-medium rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 hover:border-red-400 hover:text-red-500"
           >
             <i className="bi bi-eraser mr-1"></i>
-            清空此模式
+            {t.clearMode}
           </button>
         </div>
 
@@ -433,10 +489,10 @@ const KWC2026 = () => {
             <span className="min-w-0">
               <span className="block font-bold text-gray-800 dark:text-white">
                 <i className="bi bi-youtube text-red-500 mr-1"></i>
-                計時練習影片
+                {t.timerVideo}
               </span>
               <span className="block text-xs text-gray-500 dark:text-neutral-400">
-                影片由 {PRACTICE_VIDEO.credit} 製作
+                {t.videoCredit(PRACTICE_VIDEO.credit)}
               </span>
             </span>
             <i className={`bi bi-chevron-down transition-transform ${showVideo ? 'rotate-180' : ''}`}></i>
@@ -453,20 +509,20 @@ const KWC2026 = () => {
                   <iframe
                     className="w-full h-full"
                     src={`https://www.youtube.com/embed/${PRACTICE_VIDEO.youtubeId}?rel=0`}
-                    title="KWC 2026 計時練習影片"
+                    title={`KWC 2026 — ${t.timerVideo}`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
                 </div>
                 <p className="px-4 py-2 text-xs text-gray-500 dark:text-neutral-400">
-                  此計時練習影片由 {PRACTICE_VIDEO.credit} 製作，
+                  {t.videoCreditLong(PRACTICE_VIDEO.credit)}
                   <a
                     href={PRACTICE_VIDEO.url}
                     target="_blank"
                     rel="noreferrer"
                     className="text-blue-500 hover:underline ml-1"
                   >
-                    在 YouTube 開啟
+                    {t.openOnYoutube}
                   </a>
                 </p>
               </motion.div>
@@ -478,7 +534,7 @@ const KWC2026 = () => {
         <div className="mt-5">
           <h2 className="mb-2 px-1 text-sm font-bold text-gray-700 dark:text-neutral-300">
             <i className="bi bi-collection-play text-red-500 mr-1"></i>
-            招式範例影片
+            {t.levelVideos}
           </h2>
           <div className="grid gap-2">
             {LEVEL_VIDEOS.map(video => {
@@ -496,7 +552,7 @@ const KWC2026 = () => {
                     <span className="min-w-0">
                       <span className="block font-bold text-gray-800 dark:text-white">
                         <i className="bi bi-youtube text-red-500 mr-1"></i>
-                        Level {video.level} 招式範例
+                        {t.levelVideoTitle(video.level)}
                       </span>
                     </span>
                     <i className={`bi bi-chevron-down transition-transform ${open ? 'rotate-180' : ''}`}></i>
@@ -513,7 +569,7 @@ const KWC2026 = () => {
                           <iframe
                             className="w-full h-full"
                             src={`https://www.youtube.com/embed/${video.youtubeId}?rel=0`}
-                            title={`KWC 2026 Level ${video.level} 招式範例影片`}
+                            title={`KWC 2026 — ${t.levelVideoTitle(video.level)}`}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                           />
@@ -525,7 +581,7 @@ const KWC2026 = () => {
                             rel="noreferrer"
                             className="text-blue-500 hover:underline"
                           >
-                            在 YouTube 開啟
+                            {t.openOnYoutube}
                           </a>
                         </p>
                       </motion.div>
@@ -537,18 +593,18 @@ const KWC2026 = () => {
           </div>
         </div>
 
-        <p className="mt-5 text-center text-xs text-gray-400 dark:text-neutral-600">
-          所有選招紀錄只會保存在這台裝置的瀏覽器中，換裝置請用「匯入 / 匯出」。
-        </p>
+        <p className="mt-5 text-center text-xs text-gray-400 dark:text-neutral-600">{t.storageNote}</p>
       </div>
 
       {/* 選招視窗 */}
       <TrickPicker
         open={pickerSlot !== null}
         mode={modeConfig}
+        t={t}
+        lang={lang}
         currentId={pickerSlot !== null ? slots[pickerSlot] ?? null : null}
         usedIds={usedIds}
-        slotLabel={pickerSlot !== null ? `第 ${pickerSlot + 1} 招` : ''}
+        slotLabel={pickerSlot !== null ? t.slotLabel(pickerSlot + 1) : ''}
         onSelect={trick => {
           if (pickerSlot === null) return
           setSlot(pickerSlot, trick.id)
@@ -566,7 +622,9 @@ const KWC2026 = () => {
       <PracticeOverlay
         open={practiceRound !== null}
         mode={modeConfig}
-        roundLabel={practiceRound !== null ? rounds[practiceRound]?.label ?? '' : ''}
+        t={t}
+        lang={lang}
+        roundLabel={practiceRound !== null ? t.modes[mode].rounds[practiceRound] ?? '' : ''}
         tricks={practiceTricks}
         onClose={() => setPracticeRound(null)}
       />
@@ -590,12 +648,12 @@ const KWC2026 = () => {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between py-3 px-4 border-b border-gray-200 dark:border-neutral-800">
-                <h3 className="font-bold text-gray-800 dark:text-white">匯入 / 匯出招式表</h3>
+                <h3 className="font-bold text-gray-800 dark:text-white">{t.ioTitle}</h3>
                 <button
                   type="button"
                   onClick={() => setShowIO(false)}
                   className="size-8 inline-flex justify-center items-center rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                  aria-label="關閉"
+                  aria-label={t.close}
                 >
                   <i className="bi bi-x-lg text-sm"></i>
                 </button>
@@ -609,7 +667,7 @@ const KWC2026 = () => {
                     className="py-2.5 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700"
                   >
                     <i className="bi bi-download mr-1"></i>
-                    下載檔案
+                    {t.ioDownload}
                   </button>
                   <button
                     type="button"
@@ -617,7 +675,7 @@ const KWC2026 = () => {
                     className="py-2.5 text-sm font-medium rounded-xl border border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-200 hover:border-blue-400"
                   >
                     <i className="bi bi-clipboard mr-1"></i>
-                    複製 JSON
+                    {t.ioCopy}
                   </button>
                   <button
                     type="button"
@@ -625,7 +683,7 @@ const KWC2026 = () => {
                     className="py-2.5 text-sm font-medium rounded-xl border border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-200 hover:border-blue-400"
                   >
                     <i className="bi bi-folder2-open mr-1"></i>
-                    選擇檔案匯入
+                    {t.ioPickFile}
                   </button>
                   <button
                     type="button"
@@ -633,7 +691,7 @@ const KWC2026 = () => {
                     className="py-2.5 text-sm font-medium rounded-xl border border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-200 hover:border-blue-400"
                   >
                     <i className="bi bi-arrow-return-left mr-1"></i>
-                    從下方文字匯入
+                    {t.ioFromText}
                   </button>
                 </div>
 
@@ -661,11 +719,13 @@ const KWC2026 = () => {
                         : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300'
                     }`}
                   >
-                    <p className="font-medium">{ioMessage.text}</p>
-                    {ioMessage.details && ioMessage.details.length > 0 && (
+                    <p className="font-medium">{ioMessageText}</p>
+                    {ioMessage.key === 'importedWithWarnings' && (
                       <ul className="mt-1 list-disc pl-4 space-y-0.5">
-                        {ioMessage.details.map((detail, i) => (
-                          <li key={i}>{detail}</li>
+                        {ioMessage.warnings.map((warning, i) => (
+                          <li key={i}>
+                            {t.warning(warning, 'mode' in warning ? t.modes[warning.mode].label : '')}
+                          </li>
                         ))}
                       </ul>
                     )}
