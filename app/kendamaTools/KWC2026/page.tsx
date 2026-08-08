@@ -200,6 +200,17 @@ const KWC2026 = () => {
 
   // ------------------------------------------------------ 練習
 
+  // 練習視窗內可切換的回合（決賽只有一個，切換器會自動隱藏）
+  const practiceRounds = useMemo(
+    () =>
+      rounds.map(round => ({
+        index: round.index,
+        label: t.modes[mode].rounds[round.index] ?? '',
+        count: slots.slice(round.start, round.end).filter(Boolean).length,
+      })),
+    [rounds, slots, t, mode]
+  )
+
   const practiceTricks: Trick[] = useMemo(() => {
     if (practiceRound === null) return []
     const round = rounds[practiceRound]
@@ -624,7 +635,9 @@ const KWC2026 = () => {
         mode={modeConfig}
         t={t}
         lang={lang}
-        roundLabel={practiceRound !== null ? t.modes[mode].rounds[practiceRound] ?? '' : ''}
+        rounds={practiceRounds}
+        roundIndex={practiceRound ?? 0}
+        onRoundChange={setPracticeRound}
         tricks={practiceTricks}
         onClose={() => setPracticeRound(null)}
       />

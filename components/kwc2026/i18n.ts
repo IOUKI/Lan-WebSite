@@ -109,6 +109,8 @@ const zh = {
   close: '關閉',
 
   practiceTitle: (roundLabel: string) => `${roundLabel} 練習`,
+  roundGroupLabel: '回合',
+  switchRoundConfirm: '切換回合會重新開始計時與紀錄，確定要切換嗎？',
   timerVideoButton: '計時影片',
   endPractice: '結束練習',
   restart: '重來',
@@ -222,6 +224,8 @@ const en: Dict = {
   close: 'Close',
 
   practiceTitle: roundLabel => `${roundLabel} practice`,
+  roundGroupLabel: 'Round',
+  switchRoundConfirm: 'Switching rounds restarts the timer and clears your progress. Continue?',
   timerVideoButton: 'Timer video',
   endPractice: 'End practice',
   restart: 'Restart',
@@ -333,6 +337,8 @@ const ja: Dict = {
   close: '閉じる',
 
   practiceTitle: roundLabel => `${roundLabel} の練習`,
+  roundGroupLabel: 'ラウンド',
+  switchRoundConfirm: 'ラウンドを切り替えるとタイマーと記録がリセットされます。よろしいですか？',
   timerVideoButton: 'タイマー動画',
   endPractice: '練習を終了',
   restart: 'やり直す',
